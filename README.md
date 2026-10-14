@@ -30,6 +30,8 @@
 Interactive HTTP API documentation is available at `http://localhost:3000/docs`.
 Swagger documents the HTTP routes; the WebSocket message contract is described
 below because Swagger does not model WebSocket events.
+The same contract is available as JSON at `GET /esp32/protocol` and is included
+in the Swagger document.
 
 The gateway listens at `ws://localhost:3000/ws/esp32`. Send an `image` event
 with JSON data containing a base64 encoded JPEG or PNG:

@@ -36,6 +36,7 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 - Keep the implementation small and readable.
 - Never create or modify `.spec.ts` files in this project unless the user explicitly requests tests.
 - Every new HTTP endpoint must be documented with NestJS Swagger decorators and included in the generated Swagger document.
+- For every WebSocket gateway, document the event protocol in the README and expose a small Swagger-documented HTTP protocol endpoint.
 - Do not assume undocumented endpoint paths or response fields. If implementation needs a detail not verified above, inspect the linked repositories again or document the assumption.
 - The ESP32 sends an image roughly every two seconds when motion is detected.
 - Frontend decisions must be associated with the correct event ID.
