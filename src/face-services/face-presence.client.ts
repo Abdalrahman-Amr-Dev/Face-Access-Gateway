@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import FormData from 'form-data';
 import { firstValueFrom } from 'rxjs';
 
@@ -12,12 +13,17 @@ export interface FacePresenceResult {
 
 @Injectable()
 export class FacePresenceClient {
-  private readonly baseUrl = (
-    process.env.FACE_PRESENCE_URL ?? 'http://localhost:8000'
-  ).replace(/\/$/, '');
+  private readonly baseUrl: string;
 
   private readonly maxContentLength = 5 * 1024 * 1024; // 5 MB
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    private readonly http: HttpService,
+    config: ConfigService,
+  ) {
+    this.baseUrl = (
+      config.getOrThrow<string>('FACE_PRESENCE_URL')
+    ).replace(/\/$/, '');
+  }
 
 
   async detect(image: Buffer, mimeType: string): Promise<boolean> {
