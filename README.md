@@ -33,9 +33,13 @@ below because Swagger does not model WebSocket events.
 The same contract is available as JSON at `GET /esp32/protocol` and is included
 in the Swagger document.
 
-The face-presence client uses `FACE_PRESENCE_URL` (default:
-`http://localhost:8000`) and sends the image as multipart field `file` to
-`POST /detect`. The processing flow will use this client in the next step.
+The face-presence client uses the required `FACE_PRESENCE_URL` variable and
+sends the image as multipart field `file` to `POST /detect`. The processing
+flow will use this client in the next step.
+
+The face-recognition client uses the required `FACE_RECOGNITION_URL` variable
+and sends the same multipart field to `POST /verify`. It also exposes the
+verified `/trust` and `/block` decision calls for the later event flow.
 
 The gateway listens at `ws://localhost:3000/ws/esp32`. Send an `image` event
 with JSON data containing a base64 encoded JPEG or PNG:

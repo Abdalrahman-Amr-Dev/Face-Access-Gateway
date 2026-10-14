@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import FormData from 'form-data';
 import { firstValueFrom } from 'rxjs';
+import { MAX_IMAGE_SIZE } from '../consts/max-image-size.const.js';
 
 export interface FacePresenceResult {
   has_face: boolean;
@@ -14,17 +15,14 @@ export interface FacePresenceResult {
 @Injectable()
 export class FacePresenceClient {
   private readonly baseUrl: string;
-
-  private readonly maxContentLength = 5 * 1024 * 1024; // 5 MB
   constructor(
     private readonly http: HttpService,
     config: ConfigService,
   ) {
-    this.baseUrl = (
-      config.getOrThrow<string>('FACE_PRESENCE_URL')
-    ).replace(/\/$/, '');
+    this.baseUrl = config
+      .getOrThrow<string>('FACE_PRESENCE_URL')
+      .replace(/\/$/, '');
   }
-
 
   async detect(image: Buffer, mimeType: string): Promise<boolean> {
     const form = new FormData();
@@ -37,13 +35,15 @@ export class FacePresenceClient {
       const response = await firstValueFrom(
         this.http.post<FacePresenceResult>(`${this.baseUrl}/detect`, form, {
           headers: form.getHeaders(),
-          maxContentLength: this.maxContentLength,
-          maxBodyLength: this.maxContentLength,
+          maxContentLength: MAX_IMAGE_SIZE,
+          maxBodyLength: MAX_IMAGE_SIZE,
         }),
       );
       return response.data.has_face;
     } catch {
-      throw new ServiceUnavailableException('Face presence service unavailable');
+      throw new ServiceUnavailableException(
+        'Face presence service unavailable',
+      );
     }
   }
 }

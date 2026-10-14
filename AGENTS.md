@@ -40,3 +40,12 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 - Do not assume undocumented endpoint paths or response fields. If implementation needs a detail not verified above, inspect the linked repositories again or document the assumption.
 - The ESP32 sends an image roughly every two seconds when motion is detected.
 - Frontend decisions must be associated with the correct event ID.
+
+## Current implementation conventions
+
+- Service clients live under `src/face-services/clients/` and are registered by `FaceServicesModule`.
+- Service URLs are required configuration values read through `ConfigService`: `FACE_PRESENCE_URL` and `FACE_RECOGNITION_URL`.
+- The shared upload limit is `MAX_IMAGE_SIZE` in `src/face-services/consts/max-image-size.const.ts`.
+- The face-presence client calls `POST /detect` and returns the service's `has_face` boolean.
+- The face-recognition client calls `POST /verify` and provides `/trust` and `/block` decision methods.
+- Keep shared constants centralized instead of duplicating values in individual clients.
