@@ -25,6 +25,26 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## ESP32 WebSocket boundary
+
+The gateway listens at `ws://localhost:3000/ws/esp32`. Send an `image` event
+with JSON data containing a base64 encoded JPEG or PNG:
+
+```json
+{
+  "event": "image",
+  "data": {
+    "imageBase64": "/9j/4AAQSkZJRgABAQ...",
+    "mimeType": "image/jpeg"
+  }
+}
+```
+
+Images must be non-empty and no larger than 5 MB. Accepted messages receive an
+`image.accepted` response containing the decoded byte count. Invalid messages
+receive `image.rejected` with a reason. Face-service processing is not wired
+into this boundary yet.
+
 ## Project setup
 
 ```bash
