@@ -34,6 +34,8 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 ## Constraints
 
 - Keep the implementation small and readable.
+- Never create or modify API specification files in this project.
+- Every new HTTP endpoint must be documented with NestJS Swagger decorators and included in the generated Swagger document.
 - Do not assume undocumented endpoint paths or response fields. If implementation needs a detail not verified above, inspect the linked repositories again or document the assumption.
 - The ESP32 sends an image roughly every two seconds when motion is detected.
 - Frontend decisions must be associated with the correct event ID.
