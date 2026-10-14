@@ -27,6 +27,10 @@
 
 ## ESP32 WebSocket boundary
 
+Interactive HTTP API documentation is available at `http://localhost:3000/docs`.
+Swagger documents the HTTP routes; the WebSocket message contract is described
+below because Swagger does not model WebSocket events.
+
 The gateway listens at `ws://localhost:3000/ws/esp32`. Send an `image` event
 with JSON data containing a base64 encoded JPEG or PNG:
 
