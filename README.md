@@ -3,6 +3,14 @@
 Small API connecting an ESP32 camera, face presence and recognition
 services, and a frontend. No database is required; pending decisions live in memory.
 
+## Deployed API
+
+- Base URL: http://63.187.49.239
+- Swagger docs: http://63.187.49.239/docs
+- OpenAPI JSON: http://63.187.49.239/docs-json
+- ESP32 WebSocket: `ws://63.187.49.239/ws/esp32`
+- Frontend WebSocket: `ws://63.187.49.239/ws/frontend`
+
 ## Setup
 
 ```sh
@@ -89,3 +97,8 @@ leave the upstream outcome uncertain; verify that service before retrying.
 npm run build
 npm run lint
 ```
+
+## EC2 deployment
+
+See [the PM2 and Nginx deployment guide](deploy/README.md) to run this API and
+both face services on one EC2 instance.
