@@ -36,9 +36,12 @@ export class FacePresenceClient {
         this.http.post<FacePresenceResult>(`${this.baseUrl}/detect`, form, {
           headers: form.getHeaders(),
           maxContentLength: MAX_IMAGE_SIZE,
-          maxBodyLength: MAX_IMAGE_SIZE,
+          maxBodyLength: MAX_IMAGE_SIZE + 1024,
         }),
       );
+      if (typeof response.data?.has_face !== 'boolean') {
+        throw new Error('Invalid presence response');
+      }
       return response.data.has_face;
     } catch {
       throw new ServiceUnavailableException(

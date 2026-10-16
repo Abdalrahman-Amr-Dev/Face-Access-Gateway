@@ -48,9 +48,12 @@ export class FaceRecognitionClient {
         this.http.post<FaceRecognitionResult>(`${this.baseUrl}/verify`, form, {
           headers: form.getHeaders(),
           maxContentLength: MAX_IMAGE_SIZE,
-          maxBodyLength: MAX_IMAGE_SIZE,
+          maxBodyLength: MAX_IMAGE_SIZE + 1024,
         }),
       );
+      if (!['trusted', 'blocked', 'unknown'].includes(response.data?.status)) {
+        throw new Error('Invalid recognition response');
+      }
       return response.data;
     } catch {
       throw new ServiceUnavailableException(

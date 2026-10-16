@@ -49,3 +49,12 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 - The face-presence client calls `POST /detect` and returns the service's `has_face` boolean.
 - The face-recognition client calls `POST /verify` and provides `/trust` and `/block` decision methods.
 - Keep shared constants centralized instead of duplicating values in individual clients.
+
+## Completed gateway flow
+
+- `AccessService` processes presence before recognition and stores unknown events by UUID with the recognition service's face ID.
+- ESP32 replies now use `image.result`; overlapping images on one connection are rejected.
+- Frontend gateway: `/ws/frontend`, receives `decision` and broadcasts `face.unknown` / `decision.applied`; pending notifications replay on connection.
+- Pending events expire after five minutes, are capped at 20, and are lost on restart. Concurrent decisions for one event are rejected.
+- Both gateways have Swagger-documented protocol HTTP endpoints. README documents all message formats and setup.
+- Build, lint, and a temporary mock-service WebSocket smoke check passed. No `.spec.ts` files were created or modified.

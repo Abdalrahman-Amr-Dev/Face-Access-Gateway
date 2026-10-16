@@ -1,158 +1,91 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Face Access Gateway
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Small API connecting an ESP32 camera, face presence and recognition
+services, and a frontend. No database is required; pending decisions live in memory.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Setup
 
-## Description
+```sh
+npm install
+cp .env.example .env
+npm run start:dev
+```
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Set `FACE_PRESENCE_URL` and `FACE_RECOGNITION_URL` to the running services' base
+URLs. Both are required. `PORT` defaults to 3000. For production, run
+`npm run build` followed by `npm run start:prod`.
 
-## ESP32 WebSocket boundary
+Swagger: `http://localhost:3000/docs` (JSON: `/docs-json`). Protocol endpoints:
+`GET /esp32/protocol` and `GET /frontend/protocol`. Replace localhost with the
+API host when connecting from another device. Use this demo on a trusted local
+network; WebSocket connections do not currently require authentication.
 
-Interactive HTTP API documentation is available at `http://localhost:3000/docs`.
-Swagger documents the HTTP routes; the WebSocket message contract is described
-below because Swagger does not model WebSocket events.
-The same contract is available as JSON at `GET /esp32/protocol` and is included
-in the Swagger document.
+## ESP32 protocol
 
-The face-presence client uses the required `FACE_PRESENCE_URL` variable and
-sends the image as multipart field `file` to `POST /detect`. The processing
-flow will use this client in the next step.
-
-The face-recognition client uses the required `FACE_RECOGNITION_URL` variable
-and sends the same multipart field to `POST /verify`. It also exposes the
-verified `/trust` and `/block` decision calls for the later event flow.
-
-The gateway listens at `ws://localhost:3000/ws/esp32`. Send an `image` event
-with JSON data containing a base64 encoded JPEG or PNG:
+Connect a plain WebSocket (not Socket.IO) to `ws://localhost:3000/ws/esp32`.
+Send a padded base64 JPEG or PNG without a data-URL prefix:
 
 ```json
-{
-  "event": "image",
-  "data": {
-    "imageBase64": "/9j/4AAQSkZJRgABAQ...",
-    "mimeType": "image/jpeg"
-  }
-}
+{"event":"image","data":{"imageBase64":"<base64 image>","mimeType":"image/jpeg"}}
 ```
 
-Images must be non-empty and no larger than 5 MB. Accepted messages receive an
-`image.accepted` response containing the decoded byte count. Invalid messages
-receive `image.rejected` with a reason. Face-service processing is not wired
-into this boundary yet.
+`mimeType` defaults to `image/jpeg`. Images must be nonempty and at most 5 MiB.
+Send roughly every two seconds while motion is detected; wait for the previous
+response before sending another image. Overlapping images on the same connection
+are rejected. Frames exceeding the transport limit close the connection.
 
-## Project setup
+The API uploads multipart field `file` to presence `POST /detect`, then to
+recognition `POST /verify` only when `has_face` is true. Each HTTP request has a
+10-second timeout. The response is one of:
 
-```bash
-$ npm install
+```json
+{"event":"image.result","data":{"status":"no_face"}}
+{"event":"image.result","data":{"status":"trusted"}}
+{"event":"image.result","data":{"status":"blocked"}}
+{"event":"image.result","data":{"status":"unknown","eventId":"<uuid>","decisionAvailable":true}}
+{"event":"image.result","data":{"status":"unknown","decisionAvailable":false}}
+{"event":"image.rejected","data":{"reason":"Face presence service unavailable"}}
 ```
 
-## Compile and run the project
+An unknown result without a usable `face_id` cannot be enrolled. The API reports
+recognition status; physical lock control remains the ESP32's responsibility.
+Malformed JSON and unrecognized event names are ignored by the WebSocket adapter.
 
-```bash
-# development
-$ npm run start
+## Frontend protocol
 
-# watch mode
-$ npm run start:dev
+Connect to `ws://localhost:3000/ws/frontend`. Unknown faces are broadcast as:
 
-# production mode
-$ npm run start:prod
+```json
+{"event":"face.unknown","data":{"eventId":"<uuid>","face_id":"<service face id>","imageBase64":"<base64 image>","mimeType":"image/jpeg","expiresAt":1800000000000}}
 ```
 
-## Run tests
+`expiresAt` is a Unix timestamp in milliseconds. Pending events are replayed to
+new frontend connections. They expire after five minutes, are limited to 20,
+and disappear when the API restarts. At capacity, new unknown images are rejected;
+resolve pending decisions or wait for expiration. Each image is a separate event.
 
-```bash
-# unit tests
-$ npm run test
+Reply using the notification's `eventId`:
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```json
+{"event":"decision","data":{"eventId":"<uuid>","action":"allow","name":"Alice"}}
+{"event":"decision","data":{"eventId":"<uuid>","action":"prevent","name":"Visitor","reason":"Access denied"}}
 ```
 
-## Deployment
+`name` is required (1–100 characters, whitespace-only rejected). `reason` is
+optional and at most 500 characters; prevent defaults to `Prevented by operator`.
+The server looks up the event's stored face ID, then sends JSON to recognition
+`POST /trust` or `POST /block`. Client-supplied face IDs are not used.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Successful decisions broadcast `decision.applied` to all frontends and return
+`decision.accepted` to the sender, both with `data: {eventId, action}`.
+Failures return `decision.rejected` with `data: {eventId, reason}`. Expired,
+completed, unknown, and concurrently processing IDs are rejected. Upstream
+failures leave the decision available for retry until expiration. A timeout can
+leave the upstream outcome uncertain; verify that service before retrying.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Checks
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```sh
+npm run build
+npm run lint
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-To add it to this project:
-
-```bash
-$ npm install @nestjs/observe
-```
-
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

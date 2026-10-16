@@ -22,7 +22,7 @@ class Esp32ProtocolResponse {
   @ApiProperty({ example: '5 MB' })
   maximumImageSize!: string;
 
-  @ApiProperty({ example: 'image.accepted' })
+  @ApiProperty({ example: 'image.result' })
   acceptedResponseEvent!: string;
 
   @ApiProperty({ example: 'image.rejected' })
@@ -45,7 +45,7 @@ export class Esp32ProtocolController {
       imageField: 'imageBase64',
       acceptedMimeTypes: ['image/jpeg', 'image/png'],
       maximumImageSize: '5 MB',
-      acceptedResponseEvent: 'image.accepted',
+      acceptedResponseEvent: 'image.result',
       rejectedResponseEvent: 'image.rejected',
     };
   }

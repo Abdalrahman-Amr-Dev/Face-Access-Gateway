@@ -4,7 +4,7 @@ import { FacePresenceClient } from './clients/face-presence.client.js';
 import { FaceRecognitionClient } from './clients/face-recognition.client.js';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule.register({ timeout: 10000 })],
   providers: [FacePresenceClient, FaceRecognitionClient],
   exports: [FacePresenceClient, FaceRecognitionClient],
 })
