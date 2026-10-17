@@ -12,7 +12,7 @@ async function bootstrap() {
     .setDescription(
       'HTTP and WebSocket entry point for the ESP32 face-access project.',
     )
-    .setVersion('1.0')
+    .setVersion('2.0')
     .addTag('gateway')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
