@@ -80,11 +80,20 @@ export class AccessService {
     >;
     if (
       typeof eventId !== 'string' ||
-      (action !== 'allow' && action !== 'prevent')
+      (action !== 'allow' &&
+        action !== 'prevent' &&
+        action !== 'trust' &&
+        action !== 'block')
     ) {
-      throw new Error('eventId and action (allow or prevent) are required');
+      throw new Error(
+        'eventId and action (allow, prevent, trust or block) are required',
+      );
     }
-    if (typeof name !== 'string' || !name.trim() || name.length > 100) {
+    if (
+      ((action === 'trust' || action === 'block') && name === undefined) ||
+      (name !== undefined &&
+        (typeof name !== 'string' || !name.trim() || name.length > 100))
+    ) {
       throw new Error('name must contain 1–100 characters');
     }
     if (
@@ -99,13 +108,13 @@ export class AccessService {
     if (entry.deciding) throw new Error('Decision is already processing');
     entry.deciding = true;
     try {
-      if (action === 'allow')
-        await this.recognition.trust(entry.faceId, name.trim());
-      else
+      if (action === 'trust')
+        await this.recognition.trust(entry.faceId, (name as string).trim());
+      else if (action === 'block')
         await this.recognition.block(
           entry.faceId,
-          name.trim(),
-          (reason as string | undefined) ?? 'Prevented by operator',
+          (name as string).trim(),
+          (reason as string | undefined) ?? 'Blocked by operator',
         );
       this.pending.delete(eventId);
       const result = { eventId, action };

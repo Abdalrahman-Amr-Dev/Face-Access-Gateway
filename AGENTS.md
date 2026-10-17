@@ -18,8 +18,8 @@ The user asked to make memory and a plan first. Do not begin implementation unti
   - Multipart form field: `file`
   - Response `status` is `trusted`, `blocked`, or `unknown`.
   - Unknown responses include `face_id` (or `null` when no face); pass the returned face ID to enrollment decisions.
-  - Allow an unknown face with `POST /trust` JSON `{ "face_id": "...", "name": "..." }`.
-  - Prevent an unknown face with `POST /block` JSON `{ "face_id": "...", "name": "...", "reason": "..." }`.
+  - Trust an unknown face with `POST /trust` JSON `{ "face_id": "...", "name": "..." }`.
+  - Block an unknown face with `POST /block` JSON `{ "face_id": "...", "name": "...", "reason": "..." }`.
 
 ## Planned implementation
 
@@ -28,7 +28,7 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 3. Receive ESP32 images over WebSocket. Keep the message format simple, validate payloads and size, and document the format. A JSON object containing a base64 image and optional MIME type is a straightforward proposal; confirm it against project needs during implementation.
 4. Process each image through face presence first, then recognition only when a face is present.
 5. Notify frontend WebSocket clients when recognition returns `unknown`, including an event ID, image or image reference, and the recognition service's `face_id`.
-6. Accept frontend `allow` or `prevent` decisions tied to the pending event ID, and call `/trust` or `/block` with its associated face ID.
+6. Accept frontend `allow`, `prevent`, `trust`, or `block` decisions tied to the pending event ID. Only trust/block call the matching enrollment endpoint; allow/prevent resolve the event once without enrollment.
 7. Configure both service base URLs using environment variables, add basic error handling, and replace the starter README with setup and example WebSocket messages.
 
 ## Constraints
@@ -58,3 +58,5 @@ The user asked to make memory and a plan first. Do not begin implementation unti
 - Pending events expire after five minutes, are capped at 20, and are lost on restart. Concurrent decisions for one event are rejected.
 - Both gateways have Swagger-documented protocol HTTP endpoints. README documents all message formats and setup.
 - Build, lint, and a temporary mock-service WebSocket smoke check passed. No `.spec.ts` files were created or modified.
+
+- Four decision actions: allow/prevent resolve once without upstream enrollment; trust/block call /trust or /block and require a name. This one-time interpretation is a documented gateway protocol assumption. All decisions broadcast to frontends; ESP32 sockets do not receive later decisions.

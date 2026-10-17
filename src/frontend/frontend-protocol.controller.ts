@@ -14,6 +14,10 @@ export class FrontendProtocolController {
         incomingEvent: { type: 'string', example: 'decision' },
         outgoingEvents: { type: 'array', items: { type: 'string' } },
         decisionFields: { type: 'array', items: { type: 'string' } },
+        actionDescriptions: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
         pendingLifetimeSeconds: { type: 'number', example: 300 },
       },
     },
@@ -30,10 +34,16 @@ export class FrontendProtocolController {
       ],
       decisionFields: [
         'eventId',
-        'action: allow | prevent',
-        'name',
+        'action: allow | prevent | trust | block',
+        'name (required for trust and block; optional for allow and prevent)',
         'reason (optional)',
       ],
+      actionDescriptions: {
+        allow: 'Allow this event once; no recognition enrollment',
+        prevent: 'Deny this event once; no recognition enrollment',
+        trust: 'Enroll the face using POST /trust',
+        block: 'Enroll the face using POST /block',
+      },
       pendingLifetimeSeconds: 300,
     };
   }

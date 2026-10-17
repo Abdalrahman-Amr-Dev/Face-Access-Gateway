@@ -75,14 +75,31 @@ resolve pending decisions or wait for expiration. Each image is a separate event
 Reply using the notification's `eventId`:
 
 ```json
-{"event":"decision","data":{"eventId":"<uuid>","action":"allow","name":"Alice"}}
-{"event":"decision","data":{"eventId":"<uuid>","action":"prevent","name":"Visitor","reason":"Access denied"}}
+{"event":"decision","data":{"eventId":"<uuid>","action":"allow"}}
+{"event":"decision","data":{"eventId":"<uuid>","action":"prevent"}}
+{"event":"decision","data":{"eventId":"<uuid>","action":"trust","name":"Alice"}}
+{"event":"decision","data":{"eventId":"<uuid>","action":"block","name":"Visitor","reason":"Access denied"}}
 ```
 
-`name` is required (1–100 characters, whitespace-only rejected). `reason` is
-optional and at most 500 characters; prevent defaults to `Prevented by operator`.
-The server looks up the event's stored face ID, then sends JSON to recognition
-`POST /trust` or `POST /block`. Client-supplied face IDs are not used.
+| Action | Behavior |
+|--------|----------|
+| `allow` | Resolve this event as allowed once; no recognition request. |
+| `prevent` | Resolve this event as denied once; no recognition request. |
+| `trust` | Enroll the stored face ID with recognition `POST /trust`. |
+| `block` | Enroll the stored face ID with recognition `POST /block`. |
+
+Protocol assumption: allow/prevent are one-time decisions handled by this gateway,
+since the supplied recognition contract only defines trust/block enrollment.
+All four actions resolve the pending event. Future images of a face that was only
+allowed/prevented can still be unknown. Decisions are broadcast to frontends;
+the ESP32 image socket does not receive these later decisions, and physical
+access control must consume them separately.
+
+`name` is required for trust/block and optional for allow/prevent. When provided,
+it must contain 1–100 characters (whitespace-only rejected). `reason` is optional
+and at most 500 characters; block defaults to `Blocked by operator`.
+For enrollment, the server uses the event's stored face ID.
+Client-supplied face IDs are not used.
 
 Successful decisions broadcast `decision.applied` to all frontends and return
 `decision.accepted` to the sender, both with `data: {eventId, action}`.
